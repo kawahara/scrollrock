@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Scroll Rock Controller</title>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+        google.load("jquery", "1.7.1");
+    </script>
+  </head>
+  <script type="text/javascript">
+$(function() {
+  var WS = window['MozWebSocket'] ? MozWebSocket : WebSocket;
+  var conn = new WS('ws://' + document.location.host + "/", 'scrollrock');
+  conn.onopen = function(event) {
+    conn.send('controller');
+  }
+  $("#next").click(function(event) {
+    conn.send("next");
+
+    return false;
+  });
+});
+  </script>
+  <body>
+    <section>
+      <h1>Scroll Rock Controller</h1>
+      <div>Page: <span>NaN</span></div>
+      <div><a href="#" id="up">UP</a></div>
+      <div><a href="#" id="down">DOWN</a></div>
+      <div><a href="#" id="next">NEXT</a></div>
+      <div><a href="#" id="prev">PREV</a></div>
+    </section>
+  </body>
+</html>
