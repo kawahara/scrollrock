@@ -36,10 +36,11 @@ app.configure('production', function(){
 var ConnectionPool = function () {};
 ConnectionPool.prototype = [];
 ConnectionPool.prototype.releaseConnection = function (connection) {
-  var released = false,i;
+  var released = false, i, slice;
+  slice = Array.prototype.slice;
   for (i = 0; i < arguments.length; i+=1) {
     if (connection === arguments[i]) {
-      arguments.slice(i, 1);
+      slice.apply(arguments, [i, 1]);
       released = true;
     }
   }
