@@ -4,31 +4,28 @@
     <title>Scroll Rock Controller</title>
     <script type="text/javascript" src="https://www.google.com/jsapi"></script>
     <script type="text/javascript">
-        google.load("jquery", "1.7.1");
+      google.load("jquery", "1");
+      google.load("jqueryui", "1");
     </script>
   </head>
-  <script type="text/javascript">
-$(function() {
-  var WS = window['MozWebSocket'] ? MozWebSocket : WebSocket;
-  var conn = new WS('ws://' + document.location.host + "/", 'scrollrock');
-  conn.onopen = function(event) {
-    conn.send('controller');
-  }
-  $("#next").click(function(event) {
-    conn.send("next");
-
-    return false;
-  });
-});
-  </script>
+  <script type="text/javascript" src="./javascripts/rcon.js"></script>
   <body>
     <section>
-      <h1>Scroll Rock Controller</h1>
-      <div>Page: <span>NaN</span></div>
-      <div><a href="#" id="up">UP</a></div>
-      <div><a href="#" id="down">DOWN</a></div>
-      <div><a href="#" id="next">NEXT</a></div>
-      <div><a href="#" id="prev">PREV</a></div>
+      <h1>Scroll Rock Remote Controller</h1>
+      <div id="setting">
+        <form id="setting-form">
+          <label for="key">Key</label><input type="text" name="key">
+          <input type="submit">
+        </form>
+      </div>
+
+      <div id="controller">
+        <div>Page: <span id="page-info">NaN</span></div>
+        <div><a href="#" id="up">UP</a></div>
+        <div><a href="#" id="down">DOWN</a></div>
+        <div><a href="#" id="prev">PREV</a></div>
+        <div><a href="#" id="next">NEXT</a></div>
+      </div>
     </section>
   </body>
 </html>

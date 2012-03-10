@@ -48,7 +48,6 @@ ConnectionPool.prototype.releaseConnection = function (connection) {
 };
 
 var ConnectionPoolMap = function() {};
-ConnectionPoolMap.prototype.data = {};
 ConnectionPoolMap.prototype.releaseConnection = function(connection) {
   var released = false, k;
   for (k in this.data) {
@@ -59,10 +58,16 @@ ConnectionPoolMap.prototype.releaseConnection = function(connection) {
   return released;
 };
 ConnectionPoolMap.prototype.put = function(key, connection) {
-  if (typeof this.data[key] === "undefined") {
-    this.data[key] = new ConnectionPool();
+  if (typeof this[key] === "undefined") {
+    this[key] = new ConnectionPool();
   }
-  this.data[key].push(connection);
+  this[key].push(connection);
+};
+ConnectionPoolMap.prototype.get = function(key) {
+  if (typeof this[key] === "undefined") {
+    return [];
+  }
+  return this[key];
 };
 
 var parentConnections         = new ConnectionPoolMap();
@@ -124,7 +129,7 @@ commands.addCommand('parent', function(data) {
     , token1 = this.randomString(5)
     , token2 = this.randomString(5);
   if (typeof data.connection.type !== 'undefined') {
-    data.connection.send(response);
+    data.connection.send(JSON.stringify(response));
     return false;
   }
 
@@ -135,9 +140,11 @@ commands.addCommand('parent', function(data) {
 
   parentConnections.put(token1, data.connection);
 
-  response['token1'] = token1;
-  response['token2'] = token2;
-  data.connection.send(response);
+  response.token1 = token1;
+  response.token2 = token2;
+  response.message = 'ok';
+  console.log(token1 + token2);
+  data.connection.send(JSON.stringify(response));
 
   return true;
 });
@@ -146,18 +153,18 @@ commands.addCommand('child', function(data) {
   var response = {'operate': 'child', 'message': 'fail'};
 
   if (typeof data.connection.type !== 'undefined') {
-    data.connection.send(response);
+    data.connection.send(JSON.stringify(response));
     return false;
   }
 
   if (typeof data.params['token'] === 'undefined') {
-    data.connection.send(response);
+    data.connection.send(JSON.stringify(response));
     return false;
   }
 
   var token1 = data.params['token'];
-  if (typeof parentConnections.data[token1] === 'ConnectionPool') {
-    data.connection.send(response);
+  if (typeof parentConnections.get(token1) === 'ConnectionPool') {
+    data.connection.send(JSON.stringify(response));
     return false;
   }
 
@@ -168,80 +175,83 @@ commands.addCommand('child', function(data) {
 
   response['message'] = 'connected';
   response['token1']  = token1;
-  data.connection.send(response);
+  data.connection.send(JSON.stringify(response));
   return true;
 });
 commands.addCommand('update', function(data) {
   var response = {'operate': 'update', 'message': 'fail'};
   if (data.connection.type !== 'parent') {
-    data.connection.send(response);
+    data.connection.send(JSON.stringify(response));
     return false;
   }
 
   var token1 = data.connection.token1;
-  childConnections.data[token1].forEach(function(con) {
-    con.send({'operate': 'update', 'message': '', 'params': data.params});
-  });
+  var updateSend = function(con) {
+    con.send(JSON.stringify({'operate': 'update', 'message': '', 'params': data.params}));
+  };
+
+  childConnections.get(token1).forEach(updateSend);
+  remoteControllConnections.get(token1).forEach(updateSend);
 
   return true;
 });
 commands.addCommand('goto', function(data) {
   var response = {'operate': 'goto', 'message': 'fail'};
   if (!data.connection.controll) {
-    data.connection.send(response);
+    data.connection.send(JSON.stringify(response));
     return false;
   }
 
   var token1 = data.connection.token1;
-  parentConnections[token1][0].send({'operate': 'goto', 'message': '', 'params': data.params});
+  parentConnections.get(token1)[0].send(JSON.stringify({'operate': 'goto', 'message': '', 'params': data.params}));
 
   return true;
 });
 commands.addCommand('gotos', function(data) {
   var response = {'operate': 'gotos', 'message': 'fail'};
   if (!data.connection.controll) {
-    data.connection.send(response);
+    data.connection.send(JSON.stringify(response));
     return false;
   }
 
   var token1 = data.connection.token1;
-  parentConnections[token1][0].send({'operate': 'gotos', 'message': '', 'params': data.params});
+  parentConnections.get(token1)[0].send(JSON.stringify({'operate': 'gotos', 'message': '', 'params': data.params}));
 
   return true;
 });
 commands.addCommand('rcontroll', function(data) {
   var response = {'operate': 'rcontroll', 'message': 'fail'};
   if (typeof data.connection.type !== 'undefined') {
-    data.connection.send(response);
+    data.connection.send(JSON.stringify(response));
     return false;
   }
 
   if (typeof data.params['token'] === 'undefined') {
-    data.connection.send(response);
+    data.connection.send(JSON.stringify(response));
     return false;
   }
 
   var token = data.params['token'];
   if (token.length !== 10) {
-    data.connection.send(response);
+    data.connection.send(JSON.stringify(response));
     return false;
   }
 
   var token1 = token.substr(0, 5);
   var token2 = token.substr(5);
-  if (typeof parentConnections.data[token1] === 'ConnectionPool') {
-    data.connection.send(response);
+  if (typeof parentConnections.get(token1) === 'ConnectionPool') {
+    data.connection.send(JSON.stringify(response));
     return false;
   }
 
-  var parentCons = parentConnections.data[token1];
+  var parentCons = parentConnections.get(token1);
   if (parentCons.length < 1) {
-    data.connection.send(response);
+    data.connection.send(JSON.stringify(response));
     return false;
   }
 
   if (parentCons[0].token2 !== token2) {
-    data.connection.send(response);
+    data.connection.send(JSON.stringify(response));
     return false;
   }
 
@@ -250,9 +260,9 @@ commands.addCommand('rcontroll', function(data) {
   data.connection.controll = true;
   remoteControllConnections.put(token1, data.connection);
 
-  response['message'] = 'rcontroll';
+  response['message'] = 'ok';
   response['token1']  = token1;
-  data.connection.send(response);
+  data.connection.send(JSON.stringify(response));
 
   return true;
 });

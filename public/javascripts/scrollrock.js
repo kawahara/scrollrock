@@ -6,15 +6,29 @@ var gotoSection;
 $(function() {
   var WS = window['MozWebSocket'] ? MozWebSocket : WebSocket
     , lastScrollTop = $(document).scrollTop()
-    , isUpdate = false;
+    , isUpdate = false
+    , token1 = null
+    , token2 = null;
 
   if (WS !== null) {
     conn = new WS('ws://' + document.location.host + "/", 'scrollrock');
     conn.onmessage = function(event) {
-      if (event.data === 'next') {
-        next();
-      } else if (event.data === 'previous') {
-        previous();
+      var data = JSON.parse(event.data);
+
+      if (data.operate === 'parent' && data.message === 'ok') {
+        token1 = data.token1;
+        token2 = data.token2;
+      } else if (data.operate === 'goto' && data.params.page) {
+        if (data.params.page === '+') {
+          next();
+        } else if (data.params.page === '-') {
+          previous();
+        } else {
+          var page = parseInt(data.params.page);
+          if (!isNaN(page) && page > 0) {
+            gotoSection(page);
+          }
+        }
       }
     };
     conn.onopen = function(event) {
