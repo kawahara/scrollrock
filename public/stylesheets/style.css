@@ -6,3 +6,9 @@ html,body,h1,h2,h3 {
   margin: 0;
   padding: 0;
 }
+
+.controll-panel {
+  position: fixed;
+  left: 100px;
+  top: 0px;
+}
